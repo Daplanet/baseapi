@@ -1,10 +1,6 @@
 # cloudrun.yml
 steps:
 
-  - id: Build with paketo build pack and release to registry
-    name: 'buildpacksio/pack:latest'
-    args: ['build', '${_IMAGE_NAME}:$COMMIT_SHA','-B', '${_BUILDER}','--publish']
-
   - id: Snyk Open Source Test
     name: 'snyk/snyk-cli:npm'
     entrypoint: bash
