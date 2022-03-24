@@ -25,6 +25,7 @@ __maintainer__ = "Rob Knight"
 __status__ = "Production"
 __version__ = "1.0.1"
 
+from os import environ
 from eve import Eve
 from eve_swagger import swagger
 
@@ -33,7 +34,7 @@ def settings():
         "DEBUG": True,
         "API_VERSION": 'v1',
         "RENDERERS": ['eve.render.JSONRenderer'],
-        "MONGO_URI": "mongodb://db:27017/test",
+        "MONGO_URI": environ("DB_URI", "mongodb://db:27017/test"),
         "X_DOMAINS": ['*', 'http://editor.swagger.io' ],
         "X_HEADERS": ['Content-Type', 'If-Match'],
         "CACHE_CONTROL": 'max-ege=20',
@@ -73,10 +74,11 @@ def settings():
 
 def main():
 
+    port = int(environ.get("PORT", 5000))
     app = Eve(auth=None, settings=settings())
     app.register_blueprint(swagger)
 
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=port)
 
 
 if __name__ == '__main__':
