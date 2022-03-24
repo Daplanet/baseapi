@@ -1,9 +1,8 @@
 # cloudrun.yml
 steps:
 
-  - name: 'dfreilich/pack-action@latest'
+  - name: 'buildpacksio/pack:latest'
     args:
-      - 'pack'
       - 'build'
       - '${_IMAGE_NAME}:$COMMIT_SHA'
       - '--builder ${_BUILDER}'
