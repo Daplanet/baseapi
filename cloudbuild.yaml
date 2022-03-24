@@ -49,7 +49,7 @@ steps:
         
   - id: Validate policy compliance
     name: 'openpolicyagent/conftest:latest'
-    args: ['test','.']
+    args: ['test','docker-compose.yml']
 
   - id: Deploy to Cloud Run
     name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
