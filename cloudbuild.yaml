@@ -1,0 +1,81 @@
+# cloudrun.yml
+steps:
+
+  - name: 'dfreilich/pack-action@latest'
+    args:
+      - 'pack'
+      - 'build'
+      - '${_IMAGE_NAME}:$COMMIT_SHA'
+      - '--builder ${_BUILDER}'
+      - '--publish'
+
+  - name: 'snyk/snyk-cli:npm'
+    args:
+      - '-c'
+      - |-
+        snyk config set api=${_SNYK_TOKEN}
+        snyk test --severity-threshold=medium || true
+    id: Snyk Open Source Test
+    entrypoint: bash
+
+  - name: 'snyk/snyk-cli:npm'
+    args:
+      - '-c'
+      - |-
+        snyk config set api=${_SNYK_TOKEN}
+        snyk code test --severity-threshold=medium || true
+    id: Snyk Code Test
+    entrypoint: bash
+
+  - name: 'snyk/snyk-cli:npm'
+    args:
+      - '-c'
+      - >-
+        snyk config set api=${_SNYK_TOKEN}
+
+        snyk container test --severity-threshold=medium
+        gcr.io/$PROJECT_ID/SERVICE-NAME:$COMMIT_SHA
+    id: Snyk Container Test
+    entrypoint: bash
+
+  - name: 'snyk/snyk-cli:npm'
+    args:
+      - '-c'
+      - |-
+        snyk config set api=${_SNYK_TOKEN}
+        snyk iac test --severity-threshold=medium main.tf || true
+    id: Snyk IaC Test
+    entrypoint: bash
+
+  - name: 'snyk/snyk-cli:npm'
+    args:
+      - '-c'
+      - >-
+        snyk config set api=${_SNYK_TOKEN}
+
+        set -o pipefail
+
+        snyk test --severity-threshold=medium --json | snyk-to-html -o
+        results.html || true
+    id: Create HTML artifact
+    entrypoint: bash
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args: ['run','deploy','${_SERVICE_NAME}','--image ${_IMAGE_NAME}']
+    id: Deploy to Cloud Run
+    entrypoint: gcloud
+
+substitutions:
+    _SERVICE_NAME: ''
+    _IMAGE_NAME: ''
+    _SNYK_TOKEN: '' 
+    _BUILDER: ''
+
+images:
+ - '${_IMAGE_NAME}'
+
+artifacts:
+  objects:
+    location: 'gs://cloud-build-artifacts/scan_output'
+    paths:
+      - results.html
