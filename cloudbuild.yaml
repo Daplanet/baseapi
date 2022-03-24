@@ -55,7 +55,7 @@ steps:
   - id: Deploy to Cloud Run
     name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
-    args: ['run','deploy','${_SERVICE_NAME}','--image=${_IMAGE_NAME}']
+    args: ['run','deploy','${_SERVICE_NAME}','--image=${_IMAGE_NAME}','--region=${_REGION}']
     
 
 substitutions:
@@ -64,6 +64,7 @@ substitutions:
   _SNYK_TOKEN: ''
   _BUILDER: paketobuildpacks/builder:base
   _SEVERITY: medium
+  _REGION: us-central1
 
 images:
  - '${_IMAGE_NAME}'
