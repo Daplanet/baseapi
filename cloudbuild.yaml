@@ -8,7 +8,7 @@ steps:
       - '-c'
       - |-
         snyk config set api=${_SNYK_TOKEN}
-        snyk test --severity-threshold=medium || true
+        snyk test --severity-threshold=${_SEVERITY} || true
 
   - id: Snyk Code Test
     name: 'snyk/snyk-cli:npm'
@@ -17,7 +17,7 @@ steps:
       - '-c'
       - |-
         snyk config set api=${_SNYK_TOKEN}
-        snyk code test --severity-threshold=medium || true
+        snyk code test --severity-threshold=${_SEVERITY} || true
 
   - id: Snyk Container Test
     name: 'snyk/snyk-cli:npm'
@@ -26,9 +26,7 @@ steps:
       - '-c'
       - >-
         snyk config set api=${_SNYK_TOKEN}
-        snyk container test --severity-threshold=${_SEVERITY}
-        ${_IMAGE_NAME}:$COMMIT_SHA
-
+        snyk container test --severity-threshold=${_SEVERITY} ${_IMAGE_NAME}:$COMMIT_SHA
 
   - id: Snyk IaC Test
     name: 'snyk/snyk-cli:npm'
@@ -37,7 +35,7 @@ steps:
       - '-c'
       - |-
         snyk config set api=${_SNYK_TOKEN}
-        snyk iac test --severity-threshold=medium main.tf || true
+        (test -f main.tf && snyk iac test --severity-threshold=${_SEVERITY} main.tf) || true
 
   - id: Create HTML artifact
     name: 'snyk/snyk-cli:npm'
@@ -46,21 +44,20 @@ steps:
       - '-c'
       - >-
         snyk config set api=${_SNYK_TOKEN}
-
         set -o pipefail
-
-        snyk test --severity-threshold=medium --json | snyk-to-html -o
-        results.html || true
+        snyk test --severity-threshold=${_SEVERITY} --json | snyk-to-html -o results.html || true
 
   - id: Deploy to Cloud Run
     name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
-    args: ['run','deploy','${_SERVICE_NAME}','--image=${_IMAGE_NAME}','--region=${_REGION}']
-    
+    args: ['run','deploy','${_SERVICE_NAME}','--image=${_IMAGE_NAME}:${COMMIT_SHA}','--region=${_REGION}']
+
+options:
+    dynamic_substitutions: true
 
 substitutions:
-  _SERVICE_NAME: baseapi
-  _IMAGE_NAME: gcr.io/$PROJECT_ID/baseui
+  _SERVICE_NAME: $REPO_NAME
+  _IMAGE_NAME: gcr.io/$PROJECT_ID/$REPO_NAME
   _SNYK_TOKEN: ''
   _BUILDER: paketobuildpacks/builder:base
   _SEVERITY: medium
@@ -73,4 +70,4 @@ artifacts:
   objects:
     location: 'gs://cloud-build-artifacts/scan_output'
     paths:
-      - results.html
+      - results-${COMMIT_SHA}.html
