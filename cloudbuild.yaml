@@ -1,52 +1,51 @@
 # cloudrun.yml
 steps:
 
-  - name: 'buildpacksio/pack:latest'
-    args:
-      - 'build'
-      - '${_IMAGE_NAME}:$COMMIT_SHA'
-      - '--builder ${_BUILDER}'
-      - '--publish'
+  - id: Build with paketo build pack and release to registry
+    name: 'buildpacksio/pack:latest'
+    args: ['build', '${_IMAGE_NAME}:$COMMIT_SHA','-B', '${_BUILDER}','--publish']
 
-  - name: 'snyk/snyk-cli:npm'
+  - id: Snyk Open Source Test
+    name: 'snyk/snyk-cli:npm'
+    entrypoint: bash
     args:
       - '-c'
       - |-
         snyk config set api=${_SNYK_TOKEN}
         snyk test --severity-threshold=medium || true
-    id: Snyk Open Source Test
-    entrypoint: bash
 
-  - name: 'snyk/snyk-cli:npm'
+  - id: Snyk Code Test
+    name: 'snyk/snyk-cli:npm'
+    entrypoint: bash
     args:
       - '-c'
       - |-
         snyk config set api=${_SNYK_TOKEN}
         snyk code test --severity-threshold=medium || true
-    id: Snyk Code Test
-    entrypoint: bash
 
-  - name: 'snyk/snyk-cli:npm'
+  - id: Snyk Container Test
+    name: 'snyk/snyk-cli:npm'
+    entrypoint: bash
     args:
       - '-c'
       - >-
         snyk config set api=${_SNYK_TOKEN}
+        snyk container test --severity-threshold=${_SEVERITY}
+        ${_IMAGE_NAME}:$COMMIT_SHA
 
-        snyk container test --severity-threshold=medium
-        gcr.io/$PROJECT_ID/SERVICE-NAME:$COMMIT_SHA
-    id: Snyk Container Test
+
+  - id: Snyk IaC Test
+    name: 'snyk/snyk-cli:npm'
     entrypoint: bash
-
-  - name: 'snyk/snyk-cli:npm'
     args:
       - '-c'
       - |-
         snyk config set api=${_SNYK_TOKEN}
         snyk iac test --severity-threshold=medium main.tf || true
-    id: Snyk IaC Test
-    entrypoint: bash
 
-  - name: 'snyk/snyk-cli:npm'
+  - id: Create HTML artifact
+    name: 'snyk/snyk-cli:npm'
+    entrypoint: bash
     args:
       - '-c'
       - >-
@@ -56,19 +55,19 @@ steps:
 
         snyk test --severity-threshold=medium --json | snyk-to-html -o
         results.html || true
-    id: Create HTML artifact
-    entrypoint: bash
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    args: ['run','deploy','${_SERVICE_NAME}','--image ${_IMAGE_NAME}']
-    id: Deploy to Cloud Run
+  - id: Deploy to Cloud Run
+    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
+    args: ['run','deploy','${_SERVICE_NAME}','--image ${_IMAGE_NAME}']
+    
 
 substitutions:
-    _SERVICE_NAME: ''
-    _IMAGE_NAME: ''
-    _SNYK_TOKEN: '' 
-    _BUILDER: ''
+  _SERVICE_NAME: baseapi
+  _IMAGE_NAME: gcr.io/$PROJECT_ID/baseui
+  _SNYK_TOKEN: ''
+  _BUILDER: paketobuildpacks/builder:base
+  _SEVERITY: medium
 
 images:
  - '${_IMAGE_NAME}'
