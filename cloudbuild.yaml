@@ -46,6 +46,10 @@ steps:
         snyk config set api=${_SNYK_TOKEN}
         set -o pipefail
         snyk test --severity-threshold=${_SEVERITY} --json | snyk-to-html -o results.html || true
+        
+  - id: Validate policy compliance
+    name: 'openpolicyagent/conftest:latest'
+    args: ['test','.']
 
   - id: Deploy to Cloud Run
     name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
