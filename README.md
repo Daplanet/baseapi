@@ -14,7 +14,7 @@ setup the services from the [Datagrid]https://github.com/Daplanet/DataGrid) proj
 But the most simple part is once the image is built this kicks off the service at $VIRTUAL_HOST.
 
 ### Virtual Machine
-We suggest looking at [denzuko-devops/assets](https://github.com/denzuko-devops/assets/blob/master/workstation/Vagrantfile) for an example demo vagrantfile to deploy into aws. But overall any ubuntu based would work.
+We suggest looking at [denzuko-devops/assets](https://github.com/denzuko-devops/assets/blob/master/workstation/Vagrantfile) for an example demo vagrantfile to deploy into aws. But overall any ubuntu or debian based image would work.
 
 ```
 vagrant plugin install vagrant-aws
