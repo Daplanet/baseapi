@@ -26,7 +26,7 @@ steps:
       - '-c'
       - >-
         snyk config set api=${_SNYK_TOKEN}
-        snyk container test --severity-threshold=${_SEVERITY} ${_IMAGE_NAME}:$COMMIT_SHA
+        snyk container test --severity-threshold=${_SEVERITY} ${_IMAGE_NAME}:${_TAG}
 
   - id: Snyk IaC Test
     name: 'snyk/snyk-cli:npm'
@@ -51,10 +51,29 @@ steps:
     name: 'openpolicyagent/conftest:latest'
     args: ['test','docker-compose.yml']
 
-  - id: Deploy to Cloud Run
-    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args: ['run','deploy','${_SERVICE_NAME}','--image=${_IMAGE_NAME}:${COMMIT_SHA}','--region=${_REGION}']
+#  - id: Deploy to Cloud Run
+#    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+#    entrypoint: gcloud
+#    args: ['run','deploy','${_SERVICE_NAME}','--image=${_IMAGE_NAME}:${_TAG}','--region=${_REGION}']
+
+- name: 'gcr.io/${PROJECT_ID}/terraform'
+  args: ['init',
+    '-backend-config=project=${PROJECT_ID}',
+    '-backend-config=bucket=${_BUCKET}']
+  env:
+    - "TF_VAR_project-name=${PROJECT_ID}"
+- name: 'gcr.io/${PROJECT_ID}/terraform'
+  args: ['plan']
+  env:
+    - "TF_VAR_project-name=${PROJECT_ID}"
+- name: 'gcr.io/${PROJECT_ID}/terraform'
+  args: ['apply', '-auto-approve']
+  env:
+    - "TF_VAR_project-name=${PROJECT_ID}"
+- name: 'gcr.io/${PROJECT_ID}/terraform'
+  args: ['destroy', '-auto-approve']
+  env:
+    - "TF_VAR_project-name=${PROJECT_ID}"
 
 options:
     dynamic_substitutions: true
@@ -63,9 +82,12 @@ substitutions:
   _SERVICE_NAME: $REPO_NAME
   _IMAGE_NAME: gcr.io/$PROJECT_ID/$REPO_NAME
   _SNYK_TOKEN: ''
-  _BUILDER: paketobuildpacks/builder:base
+  _BUILDER: paketobuildpacks/builder:full
   _SEVERITY: medium
   _REGION: us-central1
+  _TAG: $COMMIT_SHA
+  _BUCKET: # Provide your own bucket name
+
 
 images:
  - '${_IMAGE_NAME}'
@@ -74,4 +96,4 @@ artifacts:
   objects:
     location: 'gs://cloud-build-artifacts/scan_output'
     paths:
-      - results-${COMMIT_SHA}.html
+      - results-${_TAG}.html
