@@ -62,18 +62,30 @@ steps:
     '-backend-config=bucket=${_BUCKET}']
   env:
     - "TF_VAR_project-name=${PROJECT_ID}"
+    - "TF_VAR_image=${_IMAGE_NAME}:${_TAG}"
+    - "TF_VAR_region=${_REGION}"
+    - "TF_VAR_app_name=${_SERVICE_NAME}"
 - name: 'gcr.io/${PROJECT_ID}/terraform'
   args: ['plan']
   env:
     - "TF_VAR_project-name=${PROJECT_ID}"
+    - "TF_VAR_image=${_IMAGE_NAME}:${_TAG}"
+    - "TF_VAR_region=${_REGION}"
+    - "TF_VAR_app_name=${_SERVICE_NAME}"
 - name: 'gcr.io/${PROJECT_ID}/terraform'
   args: ['apply', '-auto-approve']
   env:
     - "TF_VAR_project-name=${PROJECT_ID}"
-- name: 'gcr.io/${PROJECT_ID}/terraform'
-  args: ['destroy', '-auto-approve']
-  env:
+    - "TF_VAR_image=${_IMAGE_NAME}:${_TAG}"
+    - "TF_VAR_region=${_REGION}"
+    - "TF_VAR_app_name=${_SERVICE_NAME}"
+#- name: 'gcr.io/${PROJECT_ID}/terraform'
+#  args: ['destroy', '-auto-approve']
+#  env:
     - "TF_VAR_project-name=${PROJECT_ID}"
+    - "TF_VAR_image=${_IMAGE_NAME}:${_TAG}"
+    - "TF_VAR_region=${_REGION}"
+    - "TF_VAR_app_name=${_SERVICE_NAME}"
 
 options:
     dynamic_substitutions: true
@@ -87,7 +99,6 @@ substitutions:
   _REGION: us-central1
   _TAG: $COMMIT_SHA
   _BUCKET: # Provide your own bucket name
-
 
 images:
  - '${_IMAGE_NAME}'
