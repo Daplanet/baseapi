@@ -46,10 +46,6 @@ steps:
         snyk config set api=${_SNYK_TOKEN}
         set -o pipefail
         snyk test --severity-threshold=${_SEVERITY} --json | snyk-to-html -o results.html || true
-        
-  - id: Validate policy compliance
-    name: 'openpolicyagent/conftest:latest'
-    args: ['test', 'main.tf', '--fail-defined']
 
   - id: Terraform init
     name: 'gcr.io/${PROJECT_ID}/terraform'
@@ -70,6 +66,21 @@ steps:
       - "TF_VAR_image=${_IMAGE_NAME}:${_TAG}"
       - "TF_VAR_region=${_REGION}"
       - "TF_VAR_app_name=${_SERVICE_NAME}"
+
+  - id: Terraform show
+    name: 'gcr.io/${PROJECT_ID}/terraform'
+    entrypoint: '/bin/sh'
+    args: |
+      terrform show -json > tfplan.json
+    env:
+      - "TF_VAR_project-name=${PROJECT_ID}"
+      - "TF_VAR_image=${_IMAGE_NAME}:${_TAG}"
+      - "TF_VAR_region=${_REGION}"
+      - "TF_VAR_app_name=${_SERVICE_NAME}"
+
+  - id: Validate policy compliance
+    name: 'openpolicyagent/conftest:latest'
+    args: ['test', 'tfplan.json']
 
   - id: Terraform apply
     name: 'gcr.io/${PROJECT_ID}/terraform'
